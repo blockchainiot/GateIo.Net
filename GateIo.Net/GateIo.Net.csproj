@@ -5,7 +5,7 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <PropertyGroup>
-    <PackageId>GateIo.Net</PackageId>
+    <PackageId>Lgd.GateIo.Net</PackageId>
     <Authors>JKorf</Authors>
     <PackageVersion>1.22.0</PackageVersion>
     <AssemblyVersion>1.22.0</AssemblyVersion>

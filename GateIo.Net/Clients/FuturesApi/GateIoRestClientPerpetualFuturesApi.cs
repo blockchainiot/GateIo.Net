@@ -45,7 +45,7 @@ namespace GateIo.Net.Clients.FuturesApi
             ExchangeData = new GateIoRestClientPerpetualFuturesApiExchangeData(logger, this);
             Trading = new GateIoRestClientPerpetualFuturesApiTrading(logger, this);
 
-            _brokerId = string.IsNullOrEmpty(options.BrokerId) ? "copytraderpw" : options.BrokerId!;
+            _brokerId = string.IsNullOrEmpty(options.BrokerId) ? "lgdquant" : options.BrokerId!;
             ParameterPositions[HttpMethod.Delete] = HttpMethodParameterPosition.InUri;
         }
 

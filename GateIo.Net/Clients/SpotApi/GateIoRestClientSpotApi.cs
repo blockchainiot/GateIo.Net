@@ -56,7 +56,7 @@ namespace GateIo.Net.Clients.SpotApi
             ExchangeData = new GateIoRestClientSpotApiExchangeData(logger, this);
             Trading = new GateIoRestClientSpotApiTrading(logger, this);
 
-            _brokerId = string.IsNullOrEmpty(options.BrokerId) ? "copytraderpw" : options.BrokerId!;
+            _brokerId = string.IsNullOrEmpty(options.BrokerId) ? "lgdquant" : options.BrokerId!;
             ParameterPositions[HttpMethod.Delete] = HttpMethodParameterPosition.InUri;
         }
         #endregion
