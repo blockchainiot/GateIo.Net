@@ -15,6 +15,8 @@ using CryptoExchange.Net.Converters.MessageParsing;
 using System.Linq;
 using GateIo.Net.Interfaces.Clients.SpotApi;
 using CryptoExchange.Net.SharedApis;
+using GateIo.Net.Converters;
+using CryptoExchange.Net.Objects.Errors;
 
 namespace GateIo.Net.Clients.FuturesApi
 {
@@ -24,6 +26,9 @@ namespace GateIo.Net.Clients.FuturesApi
         #region fields 
         internal static TimeSyncState _timeSyncState = new TimeSyncState("Perpetual Futures Api");
         internal string _brokerId;
+
+        protected override ErrorMapping ErrorMapping => GateIoErrors.RestErrors;
+
         #endregion
 
         #region Api clients
@@ -47,14 +52,16 @@ namespace GateIo.Net.Clients.FuturesApi
 
             _brokerId = string.IsNullOrEmpty(options.BrokerId) ? "lgdquant" : options.BrokerId!;
             ParameterPositions[HttpMethod.Delete] = HttpMethodParameterPosition.InUri;
+
+            RequestBodyEmptyContent = "";
         }
 
         #endregion
 
         /// <inheritdoc />
-        protected override IStreamMessageAccessor CreateAccessor() => new SystemTextJsonStreamMessageAccessor();
+        protected override IStreamMessageAccessor CreateAccessor() => new SystemTextJsonStreamMessageAccessor(SerializerOptions.WithConverters(GateIoExchange._serializerContext));
         /// <inheritdoc />
-        protected override IMessageSerializer CreateSerializer() => new SystemTextJsonMessageSerializer();
+        protected override IMessageSerializer CreateSerializer() => new SystemTextJsonMessageSerializer(SerializerOptions.WithConverters(GateIoExchange._serializerContext));
 
         public IGateIoRestClientPerpetualFuturesApiShared SharedClient => this;
 
@@ -90,23 +97,23 @@ namespace GateIo.Net.Clients.FuturesApi
         }
 
         /// <inheritdoc />
-        protected override Error ParseErrorResponse(int httpStatusCode, IEnumerable<KeyValuePair<string, IEnumerable<string>>> responseHeaders, IMessageAccessor accessor)
+        protected override Error ParseErrorResponse(int httpStatusCode, KeyValuePair<string, string[]>[] responseHeaders, IMessageAccessor accessor, Exception? exception)
         {
-            if (!accessor.IsJson)
-                return new ServerError(accessor.GetOriginalString());
+            if (!accessor.IsValid)
+                return new ServerError(ErrorInfo.Unknown, exception: exception);
 
             var lbl = accessor.GetValue<string>(MessagePath.Get().Property("label"));
             if (lbl == null)
-                return new ServerError(accessor.GetOriginalString());
+                return new ServerError(ErrorInfo.Unknown, exception: exception);
 
             var msg = accessor.GetValue<string>(MessagePath.Get().Property("message"));
-            return new ServerError(lbl + ": " + msg);
+            return new ServerError(lbl, GetErrorInfo(lbl, msg), exception);
         }
 
         /// <inheritdoc />
-        protected override ServerRateLimitError ParseRateLimitResponse(int httpStatusCode, IEnumerable<KeyValuePair<string, IEnumerable<string>>> responseHeaders, IMessageAccessor accessor)
+        protected override ServerRateLimitError ParseRateLimitResponse(int httpStatusCode, KeyValuePair<string, string[]>[] responseHeaders, IMessageAccessor accessor)
         {
-            if (!accessor.IsJson)
+            if (!accessor.IsValid)
                 return new ServerRateLimitError(accessor.GetOriginalString());
 
             var error = GetRateLimitError(accessor);
@@ -124,7 +131,7 @@ namespace GateIo.Net.Clients.FuturesApi
 
         private ServerRateLimitError GetRateLimitError(IMessageAccessor accessor)
         {
-            if (!accessor.IsJson)
+            if (!accessor.IsValid)
                 return new ServerRateLimitError(accessor.GetOriginalString());
 
             var lbl = accessor.GetValue<string>(MessagePath.Get().Property("label"));

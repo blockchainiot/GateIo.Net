@@ -1,4 +1,5 @@
-﻿using System;
+using CryptoExchange.Net.Converters.SystemTextJson;
+using System;
 using System.Text.Json.Serialization;
 
 namespace GateIo.Net.Objects.Models
@@ -6,6 +7,7 @@ namespace GateIo.Net.Objects.Models
     /// <summary>
     /// Account ledger entry
     /// </summary>
+    [SerializationModel]
     public record GateIoLedgerEntry
     {
         /// <summary>
@@ -38,6 +40,11 @@ namespace GateIo.Net.Objects.Models
         /// </summary>
         [JsonPropertyName("type")]
         public string Type { get; set; } = string.Empty;
+        /// <summary>
+        /// Type code
+        /// </summary>
+        [JsonPropertyName("code")]
+        public string Code { get; set; } = string.Empty;
         /// <summary>
         /// Additional info
         /// </summary>

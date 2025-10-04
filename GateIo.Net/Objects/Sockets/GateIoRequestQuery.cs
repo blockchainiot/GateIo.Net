@@ -2,23 +2,20 @@
 using CryptoExchange.Net.Objects.Sockets;
 using CryptoExchange.Net.Sockets;
 using System.Collections.Generic;
-using CryptoExchange.Net;
-using CryptoExchange.Net.Converters.JsonNet;
 using System;
 using System.Collections;
 using GateIo.Net.Objects.Internal;
 using CryptoExchange.Net.Interfaces;
+using CryptoExchange.Net.Converters.SystemTextJson;
+using CryptoExchange.Net.Clients;
 
 namespace GateIo.Net.Objects.Sockets
 {
-    internal class GateIoRequestQuery<TRequest, TResponse> : Query<GateIoSocketRequestResponse<TResponse>, TResponse>
+    internal class GateIoRequestQuery<TRequest, T> : Query<T>
     {
-        public override HashSet<string> ListenerIdentifiers { get; set; }
+        private readonly SocketApiClient _client;
 
-        /// <inheritdoc />
-        public override Type? GetMessageType(IMessageAccessor message) => typeof(GateIoSocketRequestResponse<TResponse>);
-
-        public GateIoRequestQuery(long id, string channel, string evnt, TRequest? payload, bool authenticated = false, Dictionary<string, string>? headers = null) 
+        public GateIoRequestQuery(SocketApiClient client, long id, string channel, string evnt, TRequest? payload, bool authenticated = false, Dictionary<string, string>? headers = null) 
             : base(new GateIoSocketRequest<GateIoSocketRequestWrapper<TRequest>> { 
                 Channel = channel,
                 Event = evnt,
@@ -31,18 +28,19 @@ namespace GateIo.Net.Objects.Sockets
                 }, 
                 Timestamp = (long)DateTimeConverter.ConvertToSeconds(DateTime.UtcNow.AddSeconds(-1)) }, authenticated, 1)
         {
-            ListenerIdentifiers = new HashSet<string> { id.ToString(), id + "ack" };
+            _client = client;
+            MessageMatcher = MessageMatcher.Create<GateIoSocketRequestResponse<T>>([id.ToString(), id + "ack"], HandleMessage);
             RequiredResponses = 1;
         }
 
-        public override CallResult<TResponse> HandleMessage(SocketConnection connection, DataEvent<GateIoSocketRequestResponse<TResponse>> message)
+        public CallResult<T> HandleMessage(SocketConnection connection, DataEvent<GateIoSocketRequestResponse<T>> message)
         {
             // If this is an Acknowledge message we need another message with the actual result
             if (message.Data.Acknowledge)
                 RequiredResponses = 2;
 
             if (message.Data.Header.Status != 200)
-                return message.ToCallResult<TResponse>(new ServerError(message.Data.Header.Status, message.Data.Data.Error!.Message));
+                return message.ToCallResult<T>(new ServerError(message.Data.Header.Status, _client.GetErrorInfo(message.Data.Header.Status, message.Data.Data.Error!.Message)));
 
             return message.ToCallResult(message.Data.Data.Result!);
         }

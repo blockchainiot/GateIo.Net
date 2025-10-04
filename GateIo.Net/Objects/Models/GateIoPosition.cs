@@ -1,4 +1,5 @@
-﻿using System;
+using CryptoExchange.Net.Converters.SystemTextJson;
+using System;
 using System.Text.Json.Serialization;
 using GateIo.Net.Enums;
 
@@ -7,6 +8,7 @@ namespace GateIo.Net.Objects.Models
     /// <summary>
     /// Position info
     /// </summary>
+    [SerializationModel]
     public record GateIoPosition
     {
         /// <summary>
@@ -148,12 +150,17 @@ namespace GateIo.Net.Objects.Models
         /// Cross margin leverage
         /// </summary>
         [JsonPropertyName("cross_leverage_limit")]
-        public int? CrossLeverageLimit { get; set; }
+        public decimal? CrossLeverageLimit { get; set; }
         /// <summary>
         /// Update id
         /// </summary>
         [JsonPropertyName("update_id")]
         public long? UpdateId { get; set; }
+        /// <summary>
+        /// Average maintenance margin rate
+        /// </summary>
+        [JsonPropertyName("average_maintenance_rate")]
+        public decimal? AverageMaintenanceRate { get; set; }
         /// <summary>
         /// Close order
         /// </summary>
@@ -164,6 +171,7 @@ namespace GateIo.Net.Objects.Models
     /// <summary>
     /// Close order info
     /// </summary>
+    [SerializationModel]
     public record GateIoPositionCloseOrder
     {
         /// <summary>

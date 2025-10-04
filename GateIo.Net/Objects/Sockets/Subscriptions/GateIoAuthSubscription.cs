@@ -1,4 +1,5 @@
 ﻿using CryptoExchange.Net;
+using CryptoExchange.Net.Clients;
 using CryptoExchange.Net.Interfaces;
 using CryptoExchange.Net.Objects;
 using CryptoExchange.Net.Objects.Sockets;
@@ -13,58 +14,45 @@ namespace GateIo.Net.Objects.Sockets.Subscriptions
     /// <inheritdoc />
     internal class GateIoAuthSubscription<T> : Subscription<GateIoSocketResponse<GateIoSubscriptionResponse>, GateIoSocketResponse<GateIoSubscriptionResponse>>
     {
-        /// <inheritdoc />
-        public override HashSet<string> ListenerIdentifiers { get; set; }
-
+        private readonly SocketApiClient _client;
         private readonly Action<DataEvent<T>> _handler;
         private readonly string _channel;
-        private readonly IEnumerable<string>? _payload;
-
-        /// <inheritdoc />
-        public override Type? GetMessageType(IMessageAccessor message)
-        {
-            return typeof(GateIoSocketMessage<T>);
-        }
+        private readonly string[]? _payload;
 
         /// <summary>
         /// ctor
         /// </summary>
-        /// <param name="logger"></param>
-        /// <param name="channel"></param>
-        /// <param name="handler"></param>
-        /// <param name="identifiers"></param>
-        /// <param name="payload"></param>
-        public GateIoAuthSubscription(ILogger logger, string channel, IEnumerable<string> identifiers, IEnumerable<string>? payload, Action<DataEvent<T>> handler) : base(logger, false)
+        public GateIoAuthSubscription(ILogger logger, SocketApiClient client, string channel, IEnumerable<string> identifiers, string[]? payload, Action<DataEvent<T>> handler) : base(logger, false)
         {
+            _client = client;
             _handler = handler;
             _channel = channel;
             _payload = payload;
-            ListenerIdentifiers = new HashSet<string>(identifiers);
+            MessageMatcher = MessageMatcher.Create<GateIoSocketMessage<T>>(identifiers, DoHandleMessage);
         }
 
         /// <inheritdoc />
-        public override Query? GetSubQuery(SocketConnection connection)
+        protected override Query? GetSubQuery(SocketConnection connection)
         {
             var provider = (GateIoAuthenticationProvider)connection.ApiClient.AuthenticationProvider!;
-            var query = new GateIoAuthQuery<GateIoSubscriptionResponse>(_channel, "subscribe", _payload);
-            var request = (GateIoSocketAuthRequest<IEnumerable<string>>)query.Request;
+            var query = new GateIoAuthQuery<GateIoSubscriptionResponse>(_client, _channel, "subscribe", _payload);
+            var request = (GateIoSocketAuthRequest<string[]>)query.Request;
             var sign = provider.SignSocketRequest($"channel={_channel}&event=subscribe&time={request.Timestamp}");
             request.Auth = new GateIoSocketAuth { Key = provider.ApiKey, Sign = sign, Method = "api_key" };
             return query;
         }
 
         /// <inheritdoc />
-        public override Query? GetUnsubQuery()
+        protected override Query? GetUnsubQuery(SocketConnection connection)
         { 
-            return new GateIoQuery<IEnumerable<string>, GateIoSubscriptionResponse>(ExchangeHelpers.NextId(), _channel, "unsubscribe", _payload);
+            return new GateIoQuery<string[], GateIoSubscriptionResponse>(_client, ExchangeHelpers.NextId(), _channel, "unsubscribe", _payload);
         }
 
         /// <inheritdoc />
-        public override CallResult DoHandleMessage(SocketConnection connection, DataEvent<object> message)
+        public CallResult DoHandleMessage(SocketConnection connection, DataEvent<GateIoSocketMessage<T>> message)
         {
-            var data = (GateIoSocketMessage<T>)message.Data;
-            _handler.Invoke(message.As(data.Result, data.Channel, null, SocketUpdateType.Update).WithDataTimestamp(data.Timestamp));
-            return new CallResult(null);
+            _handler.Invoke(message.As(message.Data.Result, message.Data.Channel, null, SocketUpdateType.Update).WithDataTimestamp(message.Data.Timestamp));
+            return CallResult.SuccessResult;
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿using CryptoExchange.Net.Objects;
+using CryptoExchange.Net.Objects;
 using GateIo.Net.Interfaces.Clients.PerpetualFuturesApi;
 using GateIo.Net.Objects.Models;
 using System.Collections.Generic;
@@ -6,6 +6,7 @@ using System;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using GateIo.Net.Enums;
 
 namespace GateIo.Net.Clients.FuturesApi
 {
@@ -20,7 +21,7 @@ namespace GateIo.Net.Clients.FuturesApi
             _baseClient = baseClient;
         }
 
-        #region Get Risk Limit Tiers
+        #region Get Account
 
         /// <inheritdoc />
         public async Task<WebCallResult<GateIoFuturesAccount>> GetAccountAsync(
@@ -36,7 +37,7 @@ namespace GateIo.Net.Clients.FuturesApi
         #region Get Account Ledger
 
         /// <inheritdoc />
-        public async Task<WebCallResult<IEnumerable<GateIoPerpLedgerEntry>>> GetLedgerAsync(string settlementAsset, string? contract = null, DateTime? startTime = null, DateTime? endTime = null, int? page = null, int? limit = null, string? type = null, CancellationToken ct = default)
+        public async Task<WebCallResult<GateIoPerpLedgerEntry[]>> GetLedgerAsync(string settlementAsset, string? contract = null, DateTime? startTime = null, DateTime? endTime = null, int? page = null, int? limit = null, string? type = null, CancellationToken ct = default)
         {
             var parameters = new ParameterCollection();
             parameters.AddOptional("contract", contract);
@@ -46,7 +47,7 @@ namespace GateIo.Net.Clients.FuturesApi
             parameters.AddOptionalSeconds("from", startTime);
             parameters.AddOptionalSeconds("to", endTime);
             var request = _definitions.GetOrCreate(HttpMethod.Get, $"/api/v4/futures/{settlementAsset.ToLowerInvariant()}/account_book", GateIoExchange.RateLimiter.RestFuturesOther, 1, true);
-            return await _baseClient.SendAsync<IEnumerable<GateIoPerpLedgerEntry>>(request, parameters, ct).ConfigureAwait(false);
+            return await _baseClient.SendAsync<GateIoPerpLedgerEntry[]>(request, parameters, ct).ConfigureAwait(false);
         }
 
         #endregion
@@ -60,6 +61,20 @@ namespace GateIo.Net.Clients.FuturesApi
             parameters.Add("dual_mode", dualMode.ToString().ToLowerInvariant());
             var request = _definitions.GetOrCreate(HttpMethod.Post, $"/api/v4/futures/{settlementAsset.ToLowerInvariant()}/dual_mode", GateIoExchange.RateLimiter.RestFuturesOther, 1, true, parameterPosition: HttpMethodParameterPosition.InUri);
             return await _baseClient.SendAsync<GateIoFuturesAccount>(request, parameters, ct).ConfigureAwait(false);
+        }
+
+        #endregion
+
+        #region Set Margin Mode
+
+        /// <inheritdoc />
+        public async Task<WebCallResult<GateIoPosition[]>> SetMarginModeAsync(string settlementAsset, string contract, MarginMode marginMode, CancellationToken ct = default)
+        {
+            var parameters = new ParameterCollection();
+            parameters.Add("contract", contract);
+            parameters.AddEnum("mode", marginMode);
+            var request = _definitions.GetOrCreate(HttpMethod.Post, $"/api/v4/futures/{settlementAsset.ToLowerInvariant()}/positions/cross_mode", GateIoExchange.RateLimiter.RestFuturesOther, 1, true);
+            return await _baseClient.SendAsync<GateIoPosition[]>(request, parameters, ct).ConfigureAwait(false);
         }
 
         #endregion

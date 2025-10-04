@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using CryptoExchange.Net.Authentication;
@@ -21,6 +21,8 @@ using GateIo.Net.Enums;
 using GateIo.Net.Objects.Sockets;
 using GateIo.Net.Objects.Internal;
 using CryptoExchange.Net.SharedApis;
+using System.Net.WebSockets;
+using CryptoExchange.Net.Objects.Errors;
 
 namespace GateIo.Net.Clients.SpotApi
 {
@@ -39,6 +41,9 @@ namespace GateIo.Net.Clients.SpotApi
         private static readonly MessagePath _ackPath = MessagePath.Get().Property("ack");
         private static readonly MessagePath _statusPath = MessagePath.Get().Property("header").Property("status");
         internal string _brokerId;
+        private readonly bool _demoTrading;
+
+        protected override ErrorMapping ErrorMapping => GateIoErrors.SocketErrors;
         #endregion
 
         #region constructor/destructor
@@ -51,7 +56,9 @@ namespace GateIo.Net.Clients.SpotApi
         {
             _brokerId = string.IsNullOrEmpty(options.BrokerId) ? "copytraderpw" : options.BrokerId!;
 
-            SetDedicatedConnection(BaseAddress.AppendPath("ws/v4/") + "/", true);
+            _demoTrading = options.Environment.Name == TradeEnvironmentNames.Testnet;
+
+            SetDedicatedConnection($"{BaseAddress.AppendPath(GetSocketPath())}/", true);
 
             RegisterPeriodicQuery(
                 "Ping",
@@ -59,7 +66,7 @@ namespace GateIo.Net.Clients.SpotApi
                 x => new GateIoPingQuery("spot.ping"),
                 (connection, result) =>
                 {
-                    if (result.Error?.Message.Equals("Query timeout") == true)
+                    if (result.Error?.ErrorType == ErrorType.Timeout)
                     {
                         // Ping timeout, reconnect
                         _logger.LogWarning("[Sckt {SocketId}] Ping response timeout, reconnecting", connection.SocketId);
@@ -67,12 +74,12 @@ namespace GateIo.Net.Clients.SpotApi
                     }
                 });
         }
-        #endregion 
+        #endregion
 
         /// <inheritdoc />
-        protected override IMessageSerializer CreateSerializer() => new SystemTextJsonMessageSerializer();
+        protected override IMessageSerializer CreateSerializer() => new SystemTextJsonMessageSerializer(SerializerOptions.WithConverters(GateIoExchange._serializerContext));
         /// <inheritdoc />
-        protected override IByteMessageAccessor CreateAccessor() => new SystemTextJsonByteMessageAccessor();
+        protected override IByteMessageAccessor CreateAccessor(WebSocketMessageType type) => new SystemTextJsonByteMessageAccessor(SerializerOptions.WithConverters(GateIoExchange._serializerContext));
 
         /// <inheritdoc />
         protected override AuthenticationProvider CreateAuthenticationProvider(ApiCredentials credentials)
@@ -83,58 +90,67 @@ namespace GateIo.Net.Clients.SpotApi
         /// <inheritdoc />
         public async Task<CallResult<UpdateSubscription>> SubscribeToTradeUpdatesAsync(string symbol, Action<DataEvent<GateIoTradeUpdate>> onMessage, CancellationToken ct = default)
         {
-            var subscription = new GateIoSubscription<GateIoTradeUpdate>(_logger, "spot.trades", new[] { "spot.trades." + symbol }, new[] { symbol }, x => onMessage(x.WithSymbol(x.Data.Symbol)), false);
-            return await SubscribeAsync(BaseAddress.AppendPath("ws/v4/") + "/", subscription, ct).ConfigureAwait(false);
+            var subscription = new GateIoSubscription<GateIoTradeUpdate>(_logger, this, "spot.trades", new[] { "spot.trades." + symbol }, new[] { symbol }, x => onMessage(x.WithSymbol(x.Data.Symbol)), false);
+            return await SubscribeAsync($"{BaseAddress.AppendPath(GetSocketPath())}/", subscription, ct).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
         public async Task<CallResult<UpdateSubscription>> SubscribeToTradeUpdatesAsync(IEnumerable<string> symbols, Action<DataEvent<GateIoTradeUpdate>> onMessage, CancellationToken ct = default)
         {
-            var subscription = new GateIoSubscription<GateIoTradeUpdate>(_logger, "spot.trades", symbols.Select(x => "spot.trades." + x), symbols, x => onMessage(x.WithSymbol(x.Data.Symbol)), false);
-            return await SubscribeAsync(BaseAddress.AppendPath("ws/v4/") + "/", subscription, ct).ConfigureAwait(false);
+            var subscription = new GateIoSubscription<GateIoTradeUpdate>(_logger, this, "spot.trades", symbols.Select(x => "spot.trades." + x), symbols.ToArray(), x => onMessage(x.WithSymbol(x.Data.Symbol)), false);
+            return await SubscribeAsync($"{BaseAddress.AppendPath(GetSocketPath())}/", subscription, ct).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
         public async Task<CallResult<UpdateSubscription>> SubscribeToTickerUpdatesAsync(string symbol, Action<DataEvent<GateIoTickerUpdate>> onMessage, CancellationToken ct = default)
         {
-            var subscription = new GateIoSubscription<GateIoTickerUpdate>(_logger, "spot.tickers", new[] { "spot.tickers." + symbol }, new[] { symbol }, x => onMessage(x.WithSymbol(x.Data.Symbol)), false);
-            return await SubscribeAsync(BaseAddress.AppendPath("ws/v4/") + "/", subscription, ct).ConfigureAwait(false);
+            var subscription = new GateIoSubscription<GateIoTickerUpdate>(_logger, this, "spot.tickers", new[] { "spot.tickers." + symbol }, new[] { symbol }, x => onMessage(x.WithSymbol(x.Data.Symbol)), false);
+            return await SubscribeAsync($"{BaseAddress.AppendPath(GetSocketPath())}/", subscription, ct).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
         public async Task<CallResult<UpdateSubscription>> SubscribeToTickerUpdatesAsync(IEnumerable<string> symbols, Action<DataEvent<GateIoTickerUpdate>> onMessage, CancellationToken ct = default)
         {
-            var subscription = new GateIoSubscription<GateIoTickerUpdate>(_logger, "spot.tickers", symbols.Select(x => "spot.tickers." + x), symbols, x => onMessage(x.WithSymbol(x.Data.Symbol)), false);
-            return await SubscribeAsync(BaseAddress.AppendPath("ws/v4/") + "/", subscription, ct).ConfigureAwait(false);
+            var subscription = new GateIoSubscription<GateIoTickerUpdate>(_logger, this, "spot.tickers", symbols.Select(x => "spot.tickers." + x), symbols.ToArray(), x => onMessage(x.WithSymbol(x.Data.Symbol)), false);
+            return await SubscribeAsync($"{BaseAddress.AppendPath(GetSocketPath())}/", subscription, ct).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
         public async Task<CallResult<UpdateSubscription>> SubscribeToKlineUpdatesAsync(string symbol, KlineInterval interval, Action<DataEvent<GateIoKlineUpdate>> onMessage, CancellationToken ct = default)
         {
             var intervalStr = EnumConverter.GetString(interval);
-            var subscription = new GateIoSubscription<GateIoKlineUpdate>(_logger, "spot.candlesticks", new[] { "spot.candlesticks." + intervalStr + "_" + symbol }, new[] { intervalStr, symbol }, x => onMessage(x.WithSymbol(x.Data.Symbol).WithStreamId(x.StreamId + "." + x.Data.Interval)), false);
-            return await SubscribeAsync(BaseAddress.AppendPath("ws/v4/") + "/", subscription, ct).ConfigureAwait(false);
+            var subscription = new GateIoSubscription<GateIoKlineUpdate>(_logger, this, "spot.candlesticks", new[] { "spot.candlesticks." + intervalStr + "_" + symbol }, new[] { intervalStr, symbol }, x => onMessage(x.WithSymbol(x.Data.Symbol).WithStreamId(x.StreamId + "." + x.Data.Interval)), false);
+            return await SubscribeAsync($"{BaseAddress.AppendPath(GetSocketPath())}/", subscription, ct).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
         public async Task<CallResult<UpdateSubscription>> SubscribeToBookTickerUpdatesAsync(string symbol, Action<DataEvent<GateIoBookTickerUpdate>> onMessage, CancellationToken ct = default)
         {
-            var subscription = new GateIoSubscription<GateIoBookTickerUpdate>(_logger, "spot.book_ticker", new[] { "spot.book_ticker." + symbol }, new[] { symbol }, x => onMessage(x.WithSymbol(x.Data.Symbol)), false);
-            return await SubscribeAsync(BaseAddress.AppendPath("ws/v4/") + "/", subscription, ct).ConfigureAwait(false);
+            var subscription = new GateIoSubscription<GateIoBookTickerUpdate>(_logger, this, "spot.book_ticker", new[] { "spot.book_ticker." + symbol }, new[] { symbol }, x => onMessage(x.WithSymbol(x.Data.Symbol)), false);
+            return await SubscribeAsync($"{BaseAddress.AppendPath(GetSocketPath())}/", subscription, ct).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
         public async Task<CallResult<UpdateSubscription>> SubscribeToBookTickerUpdatesAsync(IEnumerable<string> symbols, Action<DataEvent<GateIoBookTickerUpdate>> onMessage, CancellationToken ct = default)
         {
-            var subscription = new GateIoSubscription<GateIoBookTickerUpdate>(_logger, "spot.book_ticker", symbols.Select(x => "spot.book_ticker." + x), symbols, x => onMessage(x.WithSymbol(x.Data.Symbol)), false);
-            return await SubscribeAsync(BaseAddress.AppendPath("ws/v4/") + "/", subscription, ct).ConfigureAwait(false);
+            var subscription = new GateIoSubscription<GateIoBookTickerUpdate>(_logger, this, "spot.book_ticker", symbols.Select(x => "spot.book_ticker." + x), symbols.ToArray(), x => onMessage(x.WithSymbol(x.Data.Symbol)), false);
+            return await SubscribeAsync($"{BaseAddress.AppendPath(GetSocketPath())}/", subscription, ct).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
         public async Task<CallResult<UpdateSubscription>> SubscribeToOrderBookUpdatesAsync(string symbol, Action<DataEvent<GateIoOrderBookUpdate>> onMessage, CancellationToken ct = default)
         {
-            var subscription = new GateIoSubscription<GateIoOrderBookUpdate>(_logger, "spot.order_book_update", new[] { "spot.order_book_update." + symbol }, new[] { symbol, "100ms" }, x => onMessage(x.WithSymbol(x.Data.Symbol)), false);
-            return await SubscribeAsync(BaseAddress.AppendPath("ws/v4/") + "/", subscription, ct).ConfigureAwait(false);
+            var subscription = new GateIoSubscription<GateIoOrderBookUpdate>(_logger, this, "spot.order_book_update", new[] { "spot.order_book_update." + symbol }, new[] { symbol, "100ms" }, x => onMessage(x.WithSymbol(x.Data.Symbol)), false);
+            return await SubscribeAsync($"{BaseAddress.AppendPath(GetSocketPath())}/", subscription, ct).ConfigureAwait(false);
+        }
+
+        /// <inheritdoc />
+        public async Task<CallResult<UpdateSubscription>> SubscribeToOrderBookV2UpdatesAsync(string symbol, int depth, Action<DataEvent<GateIoPerpOrderBookV2Update>> onMessage, CancellationToken ct = default)
+        {
+            depth.ValidateIntValues(nameof(depth), 50, 400);
+
+            var subscription = new GateIoSubscription<GateIoPerpOrderBookV2Update>(_logger, this, "spot.obu", [$"ob.{symbol}.{depth}"], new[] { $"ob.{symbol}.{depth}" }, x => onMessage(x.WithUpdateType(x.Data.Full ? SocketUpdateType.Snapshot : SocketUpdateType.Update)), false);
+            return await SubscribeAsync($"{BaseAddress.AppendPath(GetSocketPath())}/", subscription, ct).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
@@ -144,68 +160,68 @@ namespace GateIo.Net.Clients.SpotApi
             depth.ValidateIntValues(nameof(depth), 5, 10, 20, 50, 100);
             updateMs.Value.ValidateIntValues(nameof(updateMs), 100, 1000);
 
-            var subscription = new GateIoSubscription<GateIoPartialOrderBookUpdate>(_logger, "spot.order_book", new[] { "spot.order_book." + symbol }, new[] { symbol, depth.ToString(), updateMs + "ms" }, x => onMessage(x.WithSymbol(x.Data.Symbol)), false);
-            return await SubscribeAsync(BaseAddress.AppendPath("ws/v4/") + "/", subscription, ct).ConfigureAwait(false);
+            var subscription = new GateIoSubscription<GateIoPartialOrderBookUpdate>(_logger, this, "spot.order_book", new[] { "spot.order_book." + symbol }, new[] { symbol, depth.ToString(), updateMs + "ms" }, x => onMessage(x.WithSymbol(x.Data.Symbol)), false);
+            return await SubscribeAsync($"{BaseAddress.AppendPath(GetSocketPath())}/", subscription, ct).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
-        public async Task<CallResult<UpdateSubscription>> SubscribeToOrderUpdatesAsync(Action<DataEvent<IEnumerable<GateIoOrderUpdate>>> onMessage, CancellationToken ct = default)
+        public async Task<CallResult<UpdateSubscription>> SubscribeToOrderUpdatesAsync(Action<DataEvent<GateIoOrderUpdate[]>> onMessage, CancellationToken ct = default)
         {
             if (AuthenticationProvider == null)
                 return new CallResult<UpdateSubscription>(new NoApiCredentialsError());
 
-            var subscription = new GateIoAuthSubscription<IEnumerable<GateIoOrderUpdate>>(_logger, "spot.orders", new[] { "spot.orders" }, new[] { "!all" }, onMessage);
-            return await SubscribeAsync(BaseAddress.AppendPath("ws/v4/") + "/", subscription, ct).ConfigureAwait(false);
+            var subscription = new GateIoAuthSubscription<GateIoOrderUpdate[]>(_logger, this, "spot.orders", new[] { "spot.orders" }, new[] { "!all" }, onMessage);
+            return await SubscribeAsync($"{BaseAddress.AppendPath(GetSocketPath())}/", subscription, ct).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
-        public async Task<CallResult<UpdateSubscription>> SubscribeToUserTradeUpdatesAsync(Action<DataEvent<IEnumerable<GateIoUserTradeUpdate>>> onMessage, CancellationToken ct = default)
+        public async Task<CallResult<UpdateSubscription>> SubscribeToUserTradeUpdatesAsync(Action<DataEvent<GateIoUserTradeUpdate[]>> onMessage, CancellationToken ct = default)
         {
             if (AuthenticationProvider == null)
                 return new CallResult<UpdateSubscription>(new NoApiCredentialsError());
 
-            var subscription = new GateIoAuthSubscription<IEnumerable<GateIoUserTradeUpdate>>(_logger, "spot.usertrades", new[] { "spot.usertrades" }, new[] { "!all" }, onMessage);
-            return await SubscribeAsync(BaseAddress.AppendPath("ws/v4/") + "/", subscription, ct).ConfigureAwait(false);
+            var subscription = new GateIoAuthSubscription<GateIoUserTradeUpdate[]>(_logger, this, "spot.usertrades", new[] { "spot.usertrades" }, new[] { "!all" }, onMessage);
+            return await SubscribeAsync($"{BaseAddress.AppendPath(GetSocketPath())}/", subscription, ct).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
-        public async Task<CallResult<UpdateSubscription>> SubscribeToBalanceUpdatesAsync(Action<DataEvent<IEnumerable<GateIoBalanceUpdate>>> onMessage, CancellationToken ct = default)
+        public async Task<CallResult<UpdateSubscription>> SubscribeToBalanceUpdatesAsync(Action<DataEvent<GateIoBalanceUpdate[]>> onMessage, CancellationToken ct = default)
         {
             if (AuthenticationProvider == null)
                 return new CallResult<UpdateSubscription>(new NoApiCredentialsError());
 
-            var subscription = new GateIoAuthSubscription<IEnumerable<GateIoBalanceUpdate>>(_logger, "spot.balances", new[] { "spot.balances" }, null, onMessage);
-            return await SubscribeAsync(BaseAddress.AppendPath("ws/v4/") + "/", subscription, ct).ConfigureAwait(false);
+            var subscription = new GateIoAuthSubscription<GateIoBalanceUpdate[]>(_logger, this, "spot.balances", new[] { "spot.balances" }, null, onMessage);
+            return await SubscribeAsync($"{BaseAddress.AppendPath(GetSocketPath())}/", subscription, ct).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
-        public async Task<CallResult<UpdateSubscription>> SubscribeToMarginBalanceUpdatesAsync(Action<DataEvent<IEnumerable<GateIoMarginBalanceUpdate>>> onMessage, CancellationToken ct = default)
+        public async Task<CallResult<UpdateSubscription>> SubscribeToMarginBalanceUpdatesAsync(Action<DataEvent<GateIoMarginBalanceUpdate[]>> onMessage, CancellationToken ct = default)
         {
             if (AuthenticationProvider == null)
                 return new CallResult<UpdateSubscription>(new NoApiCredentialsError());
 
-            var subscription = new GateIoAuthSubscription<IEnumerable<GateIoMarginBalanceUpdate>>(_logger, "spot.margin_balances", new[] { "spot.margin_balances" }, null, onMessage);
-            return await SubscribeAsync(BaseAddress.AppendPath("ws/v4/") + "/", subscription, ct).ConfigureAwait(false);
+            var subscription = new GateIoAuthSubscription<GateIoMarginBalanceUpdate[]>(_logger, this, "spot.margin_balances", new[] { "spot.margin_balances" }, null, onMessage);
+            return await SubscribeAsync($"{BaseAddress.AppendPath(GetSocketPath())}/", subscription, ct).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
-        public async Task<CallResult<UpdateSubscription>> SubscribeToFundingBalanceUpdatesAsync(Action<DataEvent<IEnumerable<GateIoFundingBalanceUpdate>>> onMessage, CancellationToken ct = default)
+        public async Task<CallResult<UpdateSubscription>> SubscribeToFundingBalanceUpdatesAsync(Action<DataEvent<GateIoFundingBalanceUpdate[]>> onMessage, CancellationToken ct = default)
         {
             if (AuthenticationProvider == null)
                 return new CallResult<UpdateSubscription>(new NoApiCredentialsError());
 
-            var subscription = new GateIoAuthSubscription<IEnumerable<GateIoFundingBalanceUpdate>>(_logger, "spot.funding_balances", new[] { "spot.funding_balances" }, null, onMessage);
-            return await SubscribeAsync(BaseAddress.AppendPath("ws/v4/") + "/", subscription, ct).ConfigureAwait(false);
+            var subscription = new GateIoAuthSubscription<GateIoFundingBalanceUpdate[]>(_logger, this, "spot.funding_balances", new[] { "spot.funding_balances" }, null, onMessage);
+            return await SubscribeAsync($"{BaseAddress.AppendPath(GetSocketPath())}/", subscription, ct).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
-        public async Task<CallResult<UpdateSubscription>> SubscribeToCrossMarginBalanceUpdatesAsync(Action<DataEvent<IEnumerable<GateIoCrossMarginBalanceUpdate>>> onMessage, CancellationToken ct = default)
+        public async Task<CallResult<UpdateSubscription>> SubscribeToCrossMarginBalanceUpdatesAsync(Action<DataEvent<GateIoCrossMarginBalanceUpdate[]>> onMessage, CancellationToken ct = default)
         {
             if (AuthenticationProvider == null)
                 return new CallResult<UpdateSubscription>(new NoApiCredentialsError());
 
-            var subscription = new GateIoAuthSubscription<IEnumerable<GateIoCrossMarginBalanceUpdate>>(_logger, "spot.cross_balances", new[] { "spot.cross_balances" }, null, onMessage);
-            return await SubscribeAsync(BaseAddress.AppendPath("ws/v4/") + "/", subscription, ct).ConfigureAwait(false);
+            var subscription = new GateIoAuthSubscription<GateIoCrossMarginBalanceUpdate[]>(_logger, this, "spot.cross_balances", new[] { "spot.cross_balances" }, null, onMessage);
+            return await SubscribeAsync($"{BaseAddress.AppendPath(GetSocketPath())}/", subscription, ct).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
@@ -214,8 +230,8 @@ namespace GateIo.Net.Clients.SpotApi
             if (AuthenticationProvider == null)
                 return new CallResult<UpdateSubscription>(new NoApiCredentialsError());
 
-            var subscription = new GateIoAuthSubscription<GateIoTriggerOrderUpdate>(_logger, "spot.priceorders", new[] { "spot.priceorders" }, new[] { "!all" }, onMessage);
-            return await SubscribeAsync(BaseAddress.AppendPath("ws/v4/") + "/", subscription, ct).ConfigureAwait(false);
+            var subscription = new GateIoAuthSubscription<GateIoTriggerOrderUpdate>(_logger, this, "spot.priceorders", new[] { "spot.priceorders" }, new[] { "!all" }, onMessage);
+            return await SubscribeAsync($"{BaseAddress.AppendPath(GetSocketPath())}/", subscription, ct).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
@@ -230,12 +246,12 @@ namespace GateIo.Net.Clients.SpotApi
             bool? autoBorrow = null,
             bool? autoRepay = null,
             SelfTradePreventionMode? selfTradePreventionMode = null,
-            string? text = null, 
+            string? text = null,
             OrderActionMode? actionMode = null,
             CancellationToken ct = default)
         {
             var id = ExchangeHelpers.NextId();
-            var query = new GateIoRequestQuery<GateIoSpotPlaceOrderRequest, GateIoOrder>(id, "spot.order_place", "api", new GateIoSpotPlaceOrderRequest
+            var query = new GateIoRequestQuery<GateIoSpotPlaceOrderRequest, GateIoOrder>(this, id, "spot.order_place", "api", new GateIoSpotPlaceOrderRequest
             {
                 Symbol = symbol,
                 AccountType = accountType,
@@ -256,14 +272,14 @@ namespace GateIo.Net.Clients.SpotApi
                 { "X-Gate-Channel-Id", _brokerId }
             });
 
-            return await QueryAsync(BaseAddress.AppendPath("ws/v4/") + "/", query, ct).ConfigureAwait(false);
+            return await QueryAsync($"{BaseAddress.AppendPath(GetSocketPath())}/", query, ct).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
-        public async Task<CallResult<IEnumerable<GateIoOrder>>> PlaceMultipleOrdersAsync(IEnumerable<GateIoBatchPlaceRequest> orders, CancellationToken ct = default)
+        public async Task<CallResult<GateIoOrder[]>> PlaceMultipleOrdersAsync(IEnumerable<GateIoBatchPlaceRequest> orders, CancellationToken ct = default)
         {
             var id = ExchangeHelpers.NextId();
-            var query = new GateIoRequestQuery<IEnumerable<GateIoSpotPlaceOrderRequest>, IEnumerable<GateIoOrder>>(id, "spot.order_place", "api", orders.Select(o => new GateIoSpotPlaceOrderRequest
+            var query = new GateIoRequestQuery<GateIoSpotPlaceOrderRequest[], GateIoOrder[]>(this, id, "spot.order_place", "api", orders.Select(o => new GateIoSpotPlaceOrderRequest
             {
                 Text = o.Text ?? "t-" + ExchangeHelpers.RandomString(20),
                 TimeInForce = o.TimeInForce,
@@ -277,13 +293,13 @@ namespace GateIo.Net.Clients.SpotApi
                 Side = o.Side,
                 StpMode = o.SelfTradePreventionMode,
                 Symbol = o.Symbol
-            }), true,
+            }).ToArray(), true,
             new Dictionary<string, string>
             {
                 { "X-Gate-Channel-Id", _brokerId }
             });
 
-            return await QueryAsync(BaseAddress.AppendPath("ws/v4/") + "/", query, ct).ConfigureAwait(false);
+            return await QueryAsync($"{BaseAddress.AppendPath(GetSocketPath())}/", query, ct).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
@@ -297,7 +313,7 @@ namespace GateIo.Net.Clients.SpotApi
             CancellationToken ct = default)
         {
             var id = ExchangeHelpers.NextId();
-            var query = new GateIoRequestQuery<GateIoSpotAmendOrderRequest, GateIoOrder>(id, "spot.order_amend", "api", new GateIoSpotAmendOrderRequest
+            var query = new GateIoRequestQuery<GateIoSpotAmendOrderRequest, GateIoOrder>(this, id, "spot.order_amend", "api", new GateIoSpotAmendOrderRequest
             {
                 Symbol = symbol,
                 AccountType = accountType,
@@ -307,7 +323,7 @@ namespace GateIo.Net.Clients.SpotApi
                 OrderId = orderId?.ToString() ?? clientOrderId!
             }, true);
 
-            return await QueryAsync(BaseAddress.AppendPath("ws/v4/") + "/", query, ct).ConfigureAwait(false);
+            return await QueryAsync($"{BaseAddress.AppendPath(GetSocketPath())}/", query, ct).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
@@ -318,58 +334,58 @@ namespace GateIo.Net.Clients.SpotApi
             CancellationToken ct = default)
         {
             var id = ExchangeHelpers.NextId();
-            var query = new GateIoRequestQuery<GateIoSpotGetOrderRequest, GateIoOrder>(id, "spot.order_cancel", "api", new GateIoSpotGetOrderRequest
+            var query = new GateIoRequestQuery<GateIoSpotGetOrderRequest, GateIoOrder>(this, id, "spot.order_cancel", "api", new GateIoSpotGetOrderRequest
             {
                 OrderId = orderId?.ToString() ?? clientOrderId ?? throw new ArgumentException($"Either {nameof(orderId)} or {nameof(clientOrderId)} must be provided"),
                 Symbol = symbol,
                 AccountType = accountType
             }, true);
 
-            return await QueryAsync(BaseAddress.AppendPath("ws/v4/") + "/", query, ct).ConfigureAwait(false);
+            return await QueryAsync($"{BaseAddress.AppendPath(GetSocketPath())}/", query, ct).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
-        public async Task<CallResult<IEnumerable<GateIoCancelResult>>> CancelOrdersAsync(IEnumerable<GateIoBatchCancelRequest> cancelRequests, CancellationToken ct = default)
+        public async Task<CallResult<GateIoCancelResult[]>> CancelOrdersAsync(IEnumerable<GateIoBatchCancelRequest> cancelRequests, CancellationToken ct = default)
         {
             var id = ExchangeHelpers.NextId();
-            var query = new GateIoRequestQuery<IEnumerable<GateIoBatchCancelRequest>, IEnumerable<GateIoCancelResult>>(id, "spot.order_cancel_ids", "api", cancelRequests, true);
+            var query = new GateIoRequestQuery<GateIoBatchCancelRequest[], GateIoCancelResult[]>(this, id, "spot.order_cancel_ids", "api", cancelRequests.ToArray(), true);
 
-            return await QueryAsync(BaseAddress.AppendPath("ws/v4/") + "/", query, ct).ConfigureAwait(false);
+            return await QueryAsync($"{BaseAddress.AppendPath(GetSocketPath())}/", query, ct).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
-        public async Task<CallResult<IEnumerable<GateIoOrder>>> CancelAllOrdersAsync(string symbol, OrderSide? side = null, SpotAccountType? accountType = null, CancellationToken ct = default)
+        public async Task<CallResult<GateIoOrder[]>> CancelAllOrdersAsync(string symbol, OrderSide? side = null, SpotAccountType? accountType = null, CancellationToken ct = default)
         {
             var id = ExchangeHelpers.NextId();
-            var query = new GateIoRequestQuery<GateIoSpotCancelAllOrderRequest, IEnumerable<GateIoOrder>>(id, "spot.order_cancel_cp", "api", new GateIoSpotCancelAllOrderRequest
+            var query = new GateIoRequestQuery<GateIoSpotCancelAllOrderRequest, GateIoOrder[]>(this, id, "spot.order_cancel_cp", "api", new GateIoSpotCancelAllOrderRequest
             {
                 Symbol = symbol,
                 Side = side == null ? null : side == OrderSide.Buy ? "buy" : "sell",
                 AccountType = accountType
             }, true);
 
-            return await QueryAsync(BaseAddress.AppendPath("ws/v4/") + "/", query, ct).ConfigureAwait(false);
+            return await QueryAsync($"{BaseAddress.AppendPath(GetSocketPath())}/", query, ct).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
         public async Task<CallResult<GateIoOrder>> GetOrderAsync(string symbol, long orderId, SpotAccountType? accountType = null, CancellationToken ct = default)
         {
             var id = ExchangeHelpers.NextId();
-            var query = new GateIoRequestQuery<GateIoSpotGetOrderRequest, GateIoOrder>(id, "spot.order_status", "api", new GateIoSpotGetOrderRequest
+            var query = new GateIoRequestQuery<GateIoSpotGetOrderRequest, GateIoOrder>(this, id, "spot.order_status", "api", new GateIoSpotGetOrderRequest
             {
                 OrderId = orderId.ToString(),
                 Symbol = symbol,
                 AccountType = accountType
             }, true);
 
-            return await QueryAsync(BaseAddress.AppendPath("ws/v4/") + "/", query, ct).ConfigureAwait(false);
+            return await QueryAsync($"{BaseAddress.AppendPath(GetSocketPath())}/", query, ct).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
-        public async Task<CallResult<IEnumerable<GateIoOrder>>> GetOrdersAsync(string symbol, bool open, SpotAccountType? accountType = null, OrderSide? side = null, long? fromId = null, long? toId = null, int? page = null, int? pageSize = null, CancellationToken ct = default)
+        public async Task<CallResult<GateIoOrder[]>> GetOrdersAsync(string symbol, bool open, SpotAccountType? accountType = null, OrderSide? side = null, long? fromId = null, long? toId = null, int? page = null, int? pageSize = null, CancellationToken ct = default)
         {
             var id = ExchangeHelpers.NextId();
-            var query = new GateIoRequestQuery<GateIoSpotListOrdersRequest, IEnumerable<GateIoOrder>>(id, "spot.order_list", "api", new GateIoSpotListOrdersRequest
+            var query = new GateIoRequestQuery<GateIoSpotListOrdersRequest, GateIoOrder[]>(this, id, "spot.order_list", "api", new GateIoSpotListOrdersRequest
             {
                 Symbol = symbol,
                 Limit = pageSize,
@@ -381,8 +397,10 @@ namespace GateIo.Net.Clients.SpotApi
                 To = toId
             }, true);
 
-            return await QueryAsync(BaseAddress.AppendPath("ws/v4/") + "/", query, ct).ConfigureAwait(false);
+            return await QueryAsync($"{BaseAddress.AppendPath(GetSocketPath())}/", query, ct).ConfigureAwait(false);
         }
+
+        private string GetSocketPath() => $"{(!_demoTrading ? "ws/v4" : "v4/ws/spot")}";
 
         /// <inheritdoc />
         public override string? GetListenerIdentifier(IMessageAccessor message)
@@ -404,6 +422,9 @@ namespace GateIo.Net.Clients.SpotApi
             }
 
             var channel = message.GetValue<string>(_channelPath);
+
+            if (string.Equals(channel, "spot.obu"))
+                return message.GetValue<string>(_symbolPath2);
 
             if (string.Equals(channel, "spot.trades")
                 || string.Equals(channel, "spot.tickers"))
@@ -432,7 +453,7 @@ namespace GateIo.Net.Clients.SpotApi
             var timestamp = DateTimeConverter.ConvertToSeconds(DateTime.UtcNow.AddSeconds(-1)).Value;
             var signStr = $"api\nspot.login\n\n{timestamp}";
             var id = ExchangeHelpers.NextId();
-            return Task.FromResult<Query?>(new GateIoLoginQuery(id, "spot.login", "api", provider.ApiKey, provider.SignSocketRequest(signStr), timestamp));
+            return Task.FromResult<Query?>(new GateIoLoginQuery(this, id, "spot.login", "api", provider.ApiKey, provider.SignSocketRequest(signStr), timestamp));
         }
 
         /// <inheritdoc />

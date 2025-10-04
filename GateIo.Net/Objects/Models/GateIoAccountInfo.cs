@@ -1,4 +1,6 @@
-﻿using System;
+using CryptoExchange.Net.Converters.SystemTextJson;
+using GateIo.Net.Enums;
+using System;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
@@ -7,6 +9,7 @@ namespace GateIo.Net.Objects.Models
     /// <summary>
     /// Account info
     /// </summary>
+    [SerializationModel]
     public record GateIoAccountInfo
     {
         /// <summary>
@@ -18,18 +21,22 @@ namespace GateIo.Net.Objects.Models
         /// IP whitelist for this API Key
         /// </summary>
         [JsonPropertyName("ip_whitelist")]
-        public IEnumerable<string> IpWhitelist { get; set; } = Array.Empty<string>();
+        public string[] IpWhitelist { get; set; } = Array.Empty<string>();
         /// <summary>
         /// Symbol whitelist for this API Key
         /// </summary>
         [JsonPropertyName("currency_pairs")]
-        public IEnumerable<string> SymbolWhitelist { get; set; } = Array.Empty<string>();
+        public string[] SymbolWhitelist { get; set; } = Array.Empty<string>();
         /// <summary>
         /// VIP tier
         /// </summary>
         [JsonPropertyName("tier")]
         public int VipLevel { get; set; }
-
+        /// <summary>
+        /// Copy trading role
+        /// </summary>
+        [JsonPropertyName("copy_trading_role")]
+        public CopyTradingRole CopyTradingRole { get; set; }
         /// <summary>
         /// Key info
         /// </summary>
@@ -40,6 +47,7 @@ namespace GateIo.Net.Objects.Models
     /// <summary>
     /// Key info
     /// </summary>
+    [SerializationModel]
     public record GateIoKeyInfo
     {
         /// <summary>

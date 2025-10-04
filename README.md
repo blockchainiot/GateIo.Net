@@ -9,12 +9,14 @@ GateIo.Net is a client library for accessing the [Gate.io REST and Websocket API
 * Automatic websocket (re)connection management 
 * Client side rate limiting 
 * Client side order book implementation
+* Support for managing different accounts
 * Extensive logging
 * Support for different environments
 * Easy integration with other exchange client based on the CryptoExchange.Net base library
+* Native AOT support
 
 ## Supported Frameworks
-The library is targeting both `.NET Standard 2.0` and `.NET Standard 2.1` for optimal compatibility
+The library is targeting both `.NET Standard 2.0` and `.NET Standard 2.1` for optimal compatibility, as well as dotnet 8.0 and 9.0 to use the latest framework features.
 
 |.NET implementation|Version Support|
 |--|--|
@@ -60,12 +62,12 @@ The NuGet package files are added along side the source with the latest GitHub r
 	});
 	```
 
-For information on the clients, dependency injection, response processing and more see the [documentation](https://jkorf.github.io/GateIo.Net), or have a look at the examples [here](https://github.com/JKorf/GateIo.Net/tree/main/Examples) or [here](https://github.com/JKorf/CryptoExchange.Net/tree/master/Examples).
+For information on the clients, dependency injection, response processing and more see the [documentation](https://cryptoexchange.jkorf.dev?library=GateIo.Net), or have a look at the examples [here](https://github.com/JKorf/GateIo.Net/tree/main/Examples) or [here](https://github.com/JKorf/CryptoExchange.Net/tree/master/Examples).
 
 ## CryptoExchange.Net
 GateIo.Net is based on the [CryptoExchange.Net](https://github.com/JKorf/CryptoExchange.Net) base library. Other exchange API implementations based on the CryptoExchange.Net base library are available and follow the same logic.
 
-CryptoExchange.Net also allows for [easy access to different exchange API's](https://jkorf.github.io/CryptoExchange.Net#idocs_shared).
+CryptoExchange.Net also allows for [easy access to different exchange API's](https://cryptoexchange.jkorf.dev/client-libs/shared).
 
 |Exchange|Repository|Nuget|
 |--|--|--|
@@ -75,10 +77,12 @@ CryptoExchange.Net also allows for [easy access to different exchange API's](htt
 |Bitget|[JKorf/Bitget.Net](https://github.com/JKorf/Bitget.Net)|[![Nuget version](https://img.shields.io/nuget/v/JK.Bitget.net.svg?style=flat-square)](https://www.nuget.org/packages/JK.Bitget.Net)|
 |BitMart|[JKorf/BitMart.Net](https://github.com/JKorf/BitMart.Net)|[![Nuget version](https://img.shields.io/nuget/v/BitMart.net.svg?style=flat-square)](https://www.nuget.org/packages/BitMart.Net)|
 |BitMEX|[JKorf/BitMEX.Net](https://github.com/JKorf/BitMEX.Net)|[![Nuget version](https://img.shields.io/nuget/v/JKorf.BitMEX.net.svg?style=flat-square)](https://www.nuget.org/packages/JKorf.BitMEX.Net)|
+|BloFin|[JKorf/BloFin.Net](https://github.com/JKorf/BloFin.Net)|[![Nuget version](https://img.shields.io/nuget/v/BloFin.net.svg?style=flat-square)](https://www.nuget.org/packages/BloFin.Net)|
 |Bybit|[JKorf/Bybit.Net](https://github.com/JKorf/Bybit.Net)|[![Nuget version](https://img.shields.io/nuget/v/Bybit.net.svg?style=flat-square)](https://www.nuget.org/packages/Bybit.Net)|
 |Coinbase|[JKorf/Coinbase.Net](https://github.com/JKorf/Coinbase.Net)|[![Nuget version](https://img.shields.io/nuget/v/JKorf.Coinbase.Net.svg?style=flat-square)](https://www.nuget.org/packages/JKorf.Coinbase.Net)|
 |CoinEx|[JKorf/CoinEx.Net](https://github.com/JKorf/CoinEx.Net)|[![Nuget version](https://img.shields.io/nuget/v/CoinEx.net.svg?style=flat-square)](https://www.nuget.org/packages/CoinEx.Net)|
 |CoinGecko|[JKorf/CoinGecko.Net](https://github.com/JKorf/CoinGecko.Net)|[![Nuget version](https://img.shields.io/nuget/v/CoinGecko.net.svg?style=flat-square)](https://www.nuget.org/packages/CoinGecko.Net)|
+|CoinW|[JKorf/CoinW.Net](https://github.com/JKorf/CoinW.Net)|[![Nuget version](https://img.shields.io/nuget/v/CoinW.net.svg?style=flat-square)](https://www.nuget.org/packages/CoinW.Net)|
 |Crypto.com|[JKorf/CryptoCom.Net](https://github.com/JKorf/CryptoCom.Net)|[![Nuget version](https://img.shields.io/nuget/v/CryptoCom.net.svg?style=flat-square)](https://www.nuget.org/packages/CryptoCom.Net)|
 |DeepCoin|[JKorf/DeepCoin.Net](https://github.com/JKorf/DeepCoin.Net)|[![Nuget version](https://img.shields.io/nuget/v/DeepCoin.net.svg?style=flat-square)](https://www.nuget.org/packages/DeepCoin.Net)|
 |HTX|[JKorf/HTX.Net](https://github.com/JKorf/HTX.Net)|[![Nuget version](https://img.shields.io/nuget/v/JKorf.HTX.Net.svg?style=flat-square)](https://www.nuget.org/packages/JKorf.HTX.Net)|
@@ -87,6 +91,7 @@ CryptoExchange.Net also allows for [easy access to different exchange API's](htt
 |Kucoin|[JKorf/Kucoin.Net](https://github.com/JKorf/Kucoin.Net)|[![Nuget version](https://img.shields.io/nuget/v/Kucoin.net.svg?style=flat-square)](https://www.nuget.org/packages/Kucoin.Net)|
 |Mexc|[JKorf/Mexc.Net](https://github.com/JKorf/Mexc.Net)|[![Nuget version](https://img.shields.io/nuget/v/JK.Mexc.net.svg?style=flat-square)](https://www.nuget.org/packages/JK.Mexc.Net)|
 |OKX|[JKorf/OKX.Net](https://github.com/JKorf/OKX.Net)|[![Nuget version](https://img.shields.io/nuget/v/JK.OKX.net.svg?style=flat-square)](https://www.nuget.org/packages/JK.OKX.Net)|
+|Toobit|[JKorf/Toobit.Net](https://github.com/JKorf/Toobit.Net)|[![Nuget version](https://img.shields.io/nuget/v/Toobit.net.svg?style=flat-square)](https://www.nuget.org/packages/Toobit.Net)|
 |WhiteBit|[JKorf/WhiteBit.Net](https://github.com/JKorf/WhiteBit.Net)|[![Nuget version](https://img.shields.io/nuget/v/WhiteBit.net.svg?style=flat-square)](https://www.nuget.org/packages/WhiteBit.Net)|
 |XT|[JKorf/XT.Net](https://github.com/JKorf/XT.Net)|[![Nuget version](https://img.shields.io/nuget/v/XT.net.svg?style=flat-square)](https://www.nuget.org/packages/XT.Net)|
 
@@ -165,6 +170,134 @@ Make a one time donation in a crypto currency of your choice. If you prefer to d
 Alternatively, sponsor me on Github using [Github Sponsors](https://github.com/sponsors/JKorf). 
 
 ## Release notes
+* Version 2.9.1 - 02 Oct 2025
+    * Fixed incorrect response model type for restClient.SpotApi.Account.GetIsolatedMarginAccountsAsync endpoint
+
+* Version 2.9.0 - 30 Sep 2025
+    * Updated CryptoExchange.Net version to 9.8.0, see https://github.com/JKorf/CryptoExchange.Net/releases/
+    * Added ITrackerFactory to TrackerFactory implementation
+    * Added ContractAddress mapping in Shared IAssetClient implementation
+    * Add support for Demo environment
+    * Added socketClient.PerpetualFuturesApi.SubscribeToAdlUpdatesAsync subscription
+    * Added Leverage property to GateIoLoanMarginTier response model
+    * Added restClient.SpotApi.Account.GetIsolatedMarginAccountsAsync endpoint
+    * Updated WithdrawalStatus enum values
+
+* Version 2.8.1 - 10 Sep 2025
+    * Added withdrawalId, assetClass and withdrawClientOrderId parameters to restClient.SpotApi.Account.GetWithdrawalsAsync endpoint
+
+* Version 2.8.0 - 01 Sep 2025
+    * Updated CryptoExchange.Net version to 9.7.0, see https://github.com/JKorf/CryptoExchange.Net/releases/
+    * HTTP REST requests will now use HTTP version 2.0 by default
+    * Updated GateIoSpotSymbolOrderBook sync logic, fixing memory leak if syncing failed
+
+* Version 2.7.0 - 25 Aug 2025
+    * Updated CryptoExchange.Net version to 9.6.0, see https://github.com/JKorf/CryptoExchange.Net/releases/
+    * Added ClearUserClients method to user client provider
+
+* Version 2.6.1 - 21 Aug 2025
+    * Added websocket error mapping
+
+* Version 2.6.0 - 20 Aug 2025
+    * Updated CryptoExchange.Net to version 9.5.0, see https://github.com/JKorf/CryptoExchange.Net/releases/
+    * Added improved error parsing
+    * Added Rebate endpoints
+    * Updated rest request sending too prevent duplicate parameter serializationRemoved incorrect RequiredExchangeParameter notation on Shared SpotApi GetBookTickerAsync request
+    * Fixed incorrect RequiredExchangeParameter in Shared spot GetBookTickerAsync endpoint
+
+* Version 2.5.0 - 04 Aug 2025
+    * Updated CryptoExchange.Net to version 9.4.0, see https://github.com/JKorf/CryptoExchange.Net/releases/
+    * Added support for multi-symbol Shared socket subscriptions
+    * Added code parameter to restClient.SpotApi.Account.GetLedgerAsync, Added Code property to response
+
+* Version 2.4.0 - 23 Jul 2025
+    * Updated CryptoExchange.Net to version 9.3.0, see https://github.com/JKorf/CryptoExchange.Net/releases/
+    * Updated websocket message matching
+    * Added Deduction property to GateIoRiskLimitTier model
+    * Added EnableTieredMaintenanceMargin property to GateIoFuturesAccount model
+    * Added AverageMaintenanceRate to GateIoPosition model
+    * Fixed incorrect orderbook subscription in shared futures SubscribeToOrderBookUpdatesAsync
+
+* Version 2.3.0 - 15 Jul 2025
+    * Updated CryptoExchange.Net to version 9.2.0, see https://github.com/JKorf/CryptoExchange.Net/releases/
+    * Added socketClient.SpotApi.SubscribeToOrderBookV2UpdatesAsync subscription
+
+* Version 2.2.0 - 20 Jun 2025
+    * Added DelistTime and TradeUrl properties to GateIoSymbol model
+    * Added UpdateTime property to GateIoBalance model
+    * Added QuantityFilled property to GateIoOrderUpdate
+    * Added Spot websocket Order update Event property mapping to enum values
+    * Updated OrderFinishType enum values
+
+* Version 2.1.0 - 02 Jun 2025
+    * Updated CryptoExchange.Net to version 9.1.0, see https://github.com/JKorf/CryptoExchange.Net/releases/
+    * Added (I)GateIoUserClientProvider allowing for easy client management when handling multiple users
+    * Added restClient.PerpetualFuturesApi.Account.SetMarginModeAsync endpoint
+    * Added OneSecond value to KlineInterval enum
+    * Added socketClient.PerpetualFuturesApi.SubscribeToOrderBookV2UpdatesAsync subscription
+
+* Version 2.0.0 - 13 May 2025
+    * Updated CryptoExchange.Net to version 9.0.0, see https://github.com/JKorf/CryptoExchange.Net/releases/
+    * Added support for Native AOT compilation
+    * Added RateLimitUpdated event
+    * Added SharedSymbol response property to all Shared interfaces response models returning a symbol name
+    * Added GenerateClientOrderId method to PerpetualFutures and Spot Shared clients
+    * Added IBookTickerRestClient implementation to PerpetualFuturesApi and SpotApi Shared client
+    * Added IFuturesOrderClientIdClient implementation to PerpetualFuturesApi Shared client
+    * Added IFuturesTriggerOrderRestClient implementation to PerpetualFuturesApi Shared client
+    * Added IFuturesTpSlRestClient implementation to PerpetualFuturesApi Shared client
+    * Added ISpotOrderClientIdClient implementation to SpotApi Shared client
+    * Added ISpotTriggerOrderRestClient implementation to SpotApi Shared client
+    * Added MaxLongLeverage, MaxShortLeverage properties to SharedFuturesSymbol model
+    * Added QuoteVolume property mapping to SharedSpotTicker model
+    * Added OptionalExchangeParameters and Supported properties to EndpointOptions
+    * Added All property to retrieve all available environment on GateIoEnvironment
+    * Refactored Shared clients quantity parameters and responses to use SharedQuantity
+    * Updated all IEnumerable response and model types to array response types
+    * Updated order rate limiter to consider rate limits per symbol
+    * Updated restClient.PerpetualFuturesApi.Account.GetAccountAsync response model
+    * Removed Newtonsoft.Json dependency
+    * Removed legacy ISpotClient implementation
+    * Removed legacy AddGateIo(restOptions, socketOptions) DI overload
+    * Fixed some typos
+    * Fixed incorrect DataTradeMode on certain Shared interface responses
+    * Fixed restClient.SpotApi.Account.GetTransferHistoryAsync limit parameter serialization
+    * Fixed restClient.PerpetualFuturesApi.Trading.UpdateDualModePositionLeverageAsync endpoint
+
+* Version 2.0.0-beta3 - 01 May 2025
+    * Updated CryptoExchange.Net version to 9.0.0-beta5
+    * Added property to retrieve all available API environments
+
+* Version 2.0.0-beta2 - 23 Apr 2025
+    * Updated CryptoExchange.Net to version 9.0.0-beta2
+    * Added Shared spot ticker QuoteVolume mapping
+    * Fixed incorrect DataTradeMode on responses
+
+* Version 2.0.0-beta1 - 22 Apr 2025
+    * Updated CryptoExchange.Net to version 9.0.0-beta1, see https://github.com/JKorf/CryptoExchange.Net/releases/
+    * Added support for Native AOT compilation
+    * Added RateLimitUpdated event
+    * Added SharedSymbol response property to all Shared interfaces response models returning a symbol name
+    * Added GenerateClientOrderId method to PerpetualFutures and Spot Shared clients
+    * Added IBookTickerRestClient implementation to PerpetualFuturesApi and SpotApi Shared client
+    * Added IFuturesOrderClientIdClient implementation to PerpetualFuturesApi Shared client
+    * Added IFuturesTriggerOrderRestClient implementation to PerpetualFuturesApi Shared client
+    * Added IFuturesTpSlRestClient implementation to PerpetualFuturesApi Shared client
+    * Added ISpotOrderClientIdClient implementation to SpotApi Shared client
+    * Added ISpotTriggerOrderRestClient implementation to SpotApi Shared client
+    * Added MaxLongLeverage, MaxShortLeverage properties to SharedFuturesSymbol model
+    * Added OptionalExchangeParameters and Supported properties to EndpointOptions
+    * Refactored Shared clients quantity parameters and responses to use SharedQuantity
+    * Updated all IEnumerable response and model types to array response types
+    * Updated order rate limiter to consider rate limits per symbol
+    * Updated restClient.PerpetualFuturesApi.Account.GetAccountAsync response model
+    * Removed Newtonsoft.Json dependency
+    * Removed legacy ISpotClient implementation
+    * Removed legacy AddGateIo(restOptions, socketOptions) DI overload
+    * Fixed some typos
+    * Fixed restClient.SpotApi.Account.GetTransferHistoryAsync limit parameter serialization
+    * Fixed restClient.PerpetualFuturesApi.Trading.UpdateDualModePositionLeverageAsync endpoint
+
 * Version 1.22.0 - 24 Mar 2025
     * Added BaseAssetName and QuoteAssetName to GateIoSymbol model
     * Added MarketId property to GateIoTradeUpdate and GateIoUserTradeUpdate models

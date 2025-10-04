@@ -1,10 +1,13 @@
-﻿using CryptoExchange.Net.Attributes;
+using System.Text.Json.Serialization;
+using CryptoExchange.Net.Converters.SystemTextJson;
+using CryptoExchange.Net.Attributes;
 
 namespace GateIo.Net.Enums
 {
     /// <summary>
     /// Withdrawal status
     /// </summary>
+    [JsonConverter(typeof(EnumConverter<WithdrawalStatus>))]
     public enum WithdrawalStatus
     {
         /// <summary>
@@ -68,9 +71,14 @@ namespace GateIo.Net.Enums
         [Map("DMOVE")]
         RequiresManualApproval,
         /// <summary>
-        /// The order is automatically split due to large quantity
+        /// Under review
         /// </summary>
-        [Map("SPLITPEND")]
-        SplitPending
+        [Map("REVIEW")]
+        Review,
+        /// <summary>
+        /// Waiting for confirmations
+        /// </summary>
+        [Map("TRACK")]
+        Track
     }
 }

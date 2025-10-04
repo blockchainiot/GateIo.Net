@@ -1,6 +1,5 @@
 ﻿using CryptoExchange.Net.Authentication;
 using CryptoExchange.Net.Clients;
-using CryptoExchange.Net.Converters.JsonNet;
 using NUnit.Framework;
 using System.Collections.Generic;
 using System.Net.Http;
@@ -10,6 +9,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using GateIo.Net.Interfaces.Clients;
 using CryptoExchange.Net.Objects;
+using CryptoExchange.Net.Converters.SystemTextJson;
 
 namespace Gate.io.Net.UnitTests
 {
@@ -36,7 +36,7 @@ namespace Gate.io.Net.UnitTests
                 {
                     { "symbol", "LTCBTC" },
                 },
-                DateTimeConverter.ParseFromLong(1499827319559),
+                DateTimeConverter.ParseFromDouble(1499827319559),
                 true,
                 false);
         }
@@ -50,6 +50,7 @@ namespace Gate.io.Net.UnitTests
 
         [Test]
         [TestCase(TradeEnvironmentNames.Live, "https://api.gateio.ws")]
+        [TestCase(TradeEnvironmentNames.Testnet, "https://api-testnet.gateapi.io")]
         [TestCase("", "https://api.gateio.ws")]
         public void TestConstructorEnvironments(string environmentName, string expected)
         {

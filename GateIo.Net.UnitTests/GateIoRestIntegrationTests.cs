@@ -10,6 +10,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Options;
+using GateIo.Net.SymbolOrderBooks;
+using CryptoExchange.Net.Objects.Errors;
 
 namespace GateIo.Net.UnitTests
 {
@@ -44,15 +46,16 @@ namespace GateIo.Net.UnitTests
             var result = await CreateClient().SpotApi.ExchangeData.GetTickersAsync("TSTTST", default);
 
             Assert.That(result.Success, Is.False);
-            Assert.That(result.Error.Message, Contains.Substring("INVALID_CURRENCY_PAIR"));
+            Assert.That(result.Error.ErrorCode, Contains.Substring("INVALID_CURRENCY_PAIR"));
+            Assert.That(result.Error.ErrorType, Is.EqualTo(ErrorType.UnknownSymbol));
         }
 
         [Test]
         public async Task TestSpotAccount()
         {
             await RunAndCheckResult(client => client.SpotApi.Account.GetBalancesAsync(default, default), true);
-            await RunAndCheckResult(client => client.SpotApi.Account.GetLedgerAsync(default, default, default, default, default, default, default), true);
-            await RunAndCheckResult(client => client.SpotApi.Account.GetWithdrawalsAsync(default, default, default, default, default, default), true);
+            await RunAndCheckResult(client => client.SpotApi.Account.GetLedgerAsync(default, default, default, default, default, default, default, default), true);
+            await RunAndCheckResult(client => client.SpotApi.Account.GetWithdrawalsAsync(default, default, default, default, default, default, default, default, default), true);
             await RunAndCheckResult(client => client.SpotApi.Account.GetDepositsAsync(default, default, default, default, default, default), true);
             await RunAndCheckResult(client => client.SpotApi.Account.GetWithdrawStatusAsync(default, default), true);
             await RunAndCheckResult(client => client.SpotApi.Account.GetTradingFeeAsync(default, default, default), true);
@@ -163,5 +166,13 @@ namespace GateIo.Net.UnitTests
             await RunAndCheckResult(client => client.PerpetualFuturesApi.Trading.GetAutoDeleveragingHistoryAsync("usdt", default, default, default), true);
             await RunAndCheckResult(client => client.PerpetualFuturesApi.Trading.GetTriggerOrdersAsync("usdt", false, default, default, default, default), true);
         }
+
+        [Test]
+        public async Task TestOrderBooks()
+        {
+            await TestOrderBook(new GateIoSpotSymbolOrderBook("ETH_USDT"));
+            await TestOrderBook(new GateIoPerpetualFuturesSymbolOrderBook("usdt", "ETH_USDT"));
+        }
+
     }
 }

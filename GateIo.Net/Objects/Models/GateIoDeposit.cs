@@ -1,4 +1,5 @@
-﻿using System;
+using CryptoExchange.Net.Converters.SystemTextJson;
+using System;
 using System.Text.Json.Serialization;
 using GateIo.Net.Enums;
 
@@ -7,6 +8,7 @@ namespace GateIo.Net.Objects.Models
     /// <summary>
     /// Deposit info
     /// </summary>
+    [SerializationModel]
     public record GateIoDeposit
     {
         /// <summary>
@@ -55,7 +57,7 @@ namespace GateIo.Net.Objects.Models
         [JsonPropertyName("txid")]
         public string TransactionId { get; set; } = string.Empty;
         /// <summary>
-        /// Withdrawal status
+        /// Deposit status
         /// </summary>
         [JsonPropertyName("status")]
         public WithdrawalStatus Status { get; set; }

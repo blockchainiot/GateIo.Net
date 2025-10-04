@@ -1,12 +1,20 @@
-﻿using CryptoExchange.Net.Attributes;
+using System.Text.Json.Serialization;
+using CryptoExchange.Net.Converters.SystemTextJson;
+using CryptoExchange.Net.Attributes;
 
 namespace GateIo.Net.Enums
 {
     /// <summary>
     /// Kline interval
     /// </summary>
+    [JsonConverter(typeof(EnumConverter<KlineInterval>))]
     public enum KlineInterval
     {
+        /// <summary>
+        /// 1 second
+        /// </summary>
+        [Map("1s")]
+        OneSecond = 1,
         /// <summary>
         /// 10 seconds
         /// </summary>

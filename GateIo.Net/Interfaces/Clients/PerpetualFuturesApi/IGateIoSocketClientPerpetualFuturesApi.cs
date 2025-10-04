@@ -1,4 +1,4 @@
-﻿using CryptoExchange.Net.Objects;
+using CryptoExchange.Net.Objects;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -29,7 +29,7 @@ namespace GateIo.Net.Interfaces.Clients.PerpetualFuturesApi
         /// <param name="onMessage">The event handler for the received data</param>
         /// <param name="ct">Cancellation token for closing this subscription</param>
         /// <returns>A stream subscription. This stream subscription can be used to be notified when the socket is disconnected/reconnected</returns>
-        Task<CallResult<UpdateSubscription>> SubscribeToTradeUpdatesAsync(string settlementAsset, string contract, Action<DataEvent<IEnumerable<GateIoPerpTradeUpdate>>> onMessage, CancellationToken ct = default);
+        Task<CallResult<UpdateSubscription>> SubscribeToTradeUpdatesAsync(string settlementAsset, string contract, Action<DataEvent<GateIoPerpTradeUpdate[]>> onMessage, CancellationToken ct = default);
 
         /// <summary>
         /// Subscribe to public trade updates
@@ -40,7 +40,7 @@ namespace GateIo.Net.Interfaces.Clients.PerpetualFuturesApi
         /// <param name="onMessage">The event handler for the received data</param>
         /// <param name="ct">Cancellation token for closing this subscription</param>
         /// <returns>A stream subscription. This stream subscription can be used to be notified when the socket is disconnected/reconnected</returns>
-        Task<CallResult<UpdateSubscription>> SubscribeToTradeUpdatesAsync(string settlementAsset, IEnumerable<string> contracts, Action<DataEvent<IEnumerable<GateIoPerpTradeUpdate>>> onMessage, CancellationToken ct = default);
+        Task<CallResult<UpdateSubscription>> SubscribeToTradeUpdatesAsync(string settlementAsset, IEnumerable<string> contracts, Action<DataEvent<GateIoPerpTradeUpdate[]>> onMessage, CancellationToken ct = default);
 
         /// <summary>
         /// Subscribe to ticker updates
@@ -51,7 +51,7 @@ namespace GateIo.Net.Interfaces.Clients.PerpetualFuturesApi
         /// <param name="onMessage">The event handler for the received data</param>
         /// <param name="ct">Cancellation token for closing this subscription</param>
         /// <returns>A stream subscription. This stream subscription can be used to be notified when the socket is disconnected/reconnected</returns>
-        Task<CallResult<UpdateSubscription>> SubscribeToTickerUpdatesAsync(string settlementAsset, string contract, Action<DataEvent<IEnumerable<GateIoPerpTickerUpdate>>> onMessage, CancellationToken ct = default);
+        Task<CallResult<UpdateSubscription>> SubscribeToTickerUpdatesAsync(string settlementAsset, string contract, Action<DataEvent<GateIoPerpTickerUpdate[]>> onMessage, CancellationToken ct = default);
 
         /// <summary>
         /// Subscribe to ticker updates
@@ -62,7 +62,7 @@ namespace GateIo.Net.Interfaces.Clients.PerpetualFuturesApi
         /// <param name="onMessage">The event handler for the received data</param>
         /// <param name="ct">Cancellation token for closing this subscription</param>
         /// <returns>A stream subscription. This stream subscription can be used to be notified when the socket is disconnected/reconnected</returns>
-        Task<CallResult<UpdateSubscription>> SubscribeToTickerUpdatesAsync(string settlementAsset, IEnumerable<string> contracts, Action<DataEvent<IEnumerable<GateIoPerpTickerUpdate>>> onMessage, CancellationToken ct = default);
+        Task<CallResult<UpdateSubscription>> SubscribeToTickerUpdatesAsync(string settlementAsset, IEnumerable<string> contracts, Action<DataEvent<GateIoPerpTickerUpdate[]>> onMessage, CancellationToken ct = default);
 
         /// <summary>
         /// Subscribe to best book price updates
@@ -88,6 +88,18 @@ namespace GateIo.Net.Interfaces.Clients.PerpetualFuturesApi
 
         /// <summary>
         /// Subscribe to order book updates
+        /// <para><a href="https://www.gate.io/docs/developers/futures/ws/en/#order-book-v2-api" /></para>
+        /// </summary>
+        /// <param name="settlementAsset">The settlement asset. btc, usdt or usd</param>
+        /// <param name="contract">Contract, for example `ETH_USDT`</param>
+        /// <param name="depth">Book depth. 50 or 400. Depth 400 has an update frequency of 100ms while 50 has an update frequency of 20ms</param>
+        /// <param name="onMessage">The event handler for the received data</param>
+        /// <param name="ct">Cancellation token for closing this subscription</param>
+        /// <returns>A stream subscription. This stream subscription can be used to be notified when the socket is disconnected/reconnected</returns>
+        Task<CallResult<UpdateSubscription>> SubscribeToOrderBookV2UpdatesAsync(string settlementAsset, string contract, int depth, Action<DataEvent<GateIoPerpOrderBookV2Update>> onMessage, CancellationToken ct = default);
+
+        /// <summary>
+        /// Subscribe to order book updates
         /// <para><a href="https://www.gate.io/docs/developers/futures/ws/en/#order-book-update-subscription" /></para>
         /// </summary>
         /// <param name="settlementAsset">The settlement asset. btc, usdt or usd</param>
@@ -109,7 +121,7 @@ namespace GateIo.Net.Interfaces.Clients.PerpetualFuturesApi
         /// <param name="onMessage">The event handler for the received data</param>
         /// <param name="ct">Cancellation token for closing this subscription</param>
         /// <returns>A stream subscription. This stream subscription can be used to be notified when the socket is disconnected/reconnected</returns>
-        Task<CallResult<UpdateSubscription>> SubscribeToKlineUpdatesAsync(string settlementAsset, string contract, KlineInterval interval, Action<DataEvent<IEnumerable<GateIoPerpKlineUpdate>>> onMessage, CancellationToken ct = default);
+        Task<CallResult<UpdateSubscription>> SubscribeToKlineUpdatesAsync(string settlementAsset, string contract, KlineInterval interval, Action<DataEvent<GateIoPerpKlineUpdate[]>> onMessage, CancellationToken ct = default);
 
         /// <summary>
         /// Subscribe to contract stats updates
@@ -132,7 +144,7 @@ namespace GateIo.Net.Interfaces.Clients.PerpetualFuturesApi
         /// <param name="onMessage">The event handler for the received data</param>
         /// <param name="ct">Cancellation token for closing this subscription</param>
         /// <returns>A stream subscription. This stream subscription can be used to be notified when the socket is disconnected/reconnected</returns>
-        Task<CallResult<UpdateSubscription>> SubscribeToOrderUpdatesAsync(long userId, string settlementAsset, Action<DataEvent<IEnumerable<GateIoPerpOrder>>> onMessage, CancellationToken ct = default);
+        Task<CallResult<UpdateSubscription>> SubscribeToOrderUpdatesAsync(long userId, string settlementAsset, Action<DataEvent<GateIoPerpOrder[]>> onMessage, CancellationToken ct = default);
 
         /// <summary>
         /// Subscribe to user trade updates
@@ -143,7 +155,7 @@ namespace GateIo.Net.Interfaces.Clients.PerpetualFuturesApi
         /// <param name="onMessage">The event handler for the received data</param>
         /// <param name="ct">Cancellation token for closing this subscription</param>
         /// <returns>A stream subscription. This stream subscription can be used to be notified when the socket is disconnected/reconnected</returns>
-        Task<CallResult<UpdateSubscription>> SubscribeToUserTradeUpdatesAsync(long userId, string settlementAsset, Action<DataEvent<IEnumerable<GateIoPerpUserTrade>>> onMessage, CancellationToken ct = default);
+        Task<CallResult<UpdateSubscription>> SubscribeToUserTradeUpdatesAsync(long userId, string settlementAsset, Action<DataEvent<GateIoPerpUserTrade[]>> onMessage, CancellationToken ct = default);
 
         /// <summary>
         /// Subscribe to user liquidation updates
@@ -154,7 +166,7 @@ namespace GateIo.Net.Interfaces.Clients.PerpetualFuturesApi
         /// <param name="onMessage">The event handler for the received data</param>
         /// <param name="ct">Cancellation token for closing this subscription</param>
         /// <returns>A stream subscription. This stream subscription can be used to be notified when the socket is disconnected/reconnected</returns>
-        Task<CallResult<UpdateSubscription>> SubscribeToUserLiquidationUpdatesAsync(long userId, string settlementAsset, Action<DataEvent<IEnumerable<GateIoPerpLiquidation>>> onMessage, CancellationToken ct = default);
+        Task<CallResult<UpdateSubscription>> SubscribeToUserLiquidationUpdatesAsync(long userId, string settlementAsset, Action<DataEvent<GateIoPerpLiquidation[]>> onMessage, CancellationToken ct = default);
 
         /// <summary>
         /// Subscribe to user auto deleverage updates
@@ -165,7 +177,7 @@ namespace GateIo.Net.Interfaces.Clients.PerpetualFuturesApi
         /// <param name="onMessage">The event handler for the received data</param>
         /// <param name="ct">Cancellation token for closing this subscription</param>
         /// <returns>A stream subscription. This stream subscription can be used to be notified when the socket is disconnected/reconnected</returns>
-        Task<CallResult<UpdateSubscription>> SubscribeToUserAutoDeleverageUpdatesAsync(long userId, string settlementAsset, Action<DataEvent<IEnumerable<GateIoPerpAutoDeleverage>>> onMessage, CancellationToken ct = default);
+        Task<CallResult<UpdateSubscription>> SubscribeToUserAutoDeleverageUpdatesAsync(long userId, string settlementAsset, Action<DataEvent<GateIoPerpAutoDeleverage[]>> onMessage, CancellationToken ct = default);
 
         /// <summary>
         /// Subscribe to user position close updates
@@ -176,7 +188,7 @@ namespace GateIo.Net.Interfaces.Clients.PerpetualFuturesApi
         /// <param name="onMessage">The event handler for the received data</param>
         /// <param name="ct">Cancellation token for closing this subscription</param>
         /// <returns>A stream subscription. This stream subscription can be used to be notified when the socket is disconnected/reconnected</returns>
-        Task<CallResult<UpdateSubscription>> SubscribeToPositionCloseUpdatesAsync(long userId, string settlementAsset, Action<DataEvent<IEnumerable<GateIoPerpPositionCloseUpdate>>> onMessage, CancellationToken ct = default);
+        Task<CallResult<UpdateSubscription>> SubscribeToPositionCloseUpdatesAsync(long userId, string settlementAsset, Action<DataEvent<GateIoPerpPositionCloseUpdate[]>> onMessage, CancellationToken ct = default);
 
         /// <summary>
         /// Subscribe to balance updates
@@ -187,7 +199,7 @@ namespace GateIo.Net.Interfaces.Clients.PerpetualFuturesApi
         /// <param name="onMessage">The event handler for the received data</param>
         /// <param name="ct">Cancellation token for closing this subscription</param>
         /// <returns>A stream subscription. This stream subscription can be used to be notified when the socket is disconnected/reconnected</returns>
-        Task<CallResult<UpdateSubscription>> SubscribeToBalanceUpdatesAsync(long userId, string settlementAsset, Action<DataEvent<IEnumerable<GateIoPerpBalanceUpdate>>> onMessage, CancellationToken ct = default);
+        Task<CallResult<UpdateSubscription>> SubscribeToBalanceUpdatesAsync(long userId, string settlementAsset, Action<DataEvent<GateIoPerpBalanceUpdate[]>> onMessage, CancellationToken ct = default);
 
         /// <summary>
         /// Subscribe to user reduce risk limit updates
@@ -198,7 +210,7 @@ namespace GateIo.Net.Interfaces.Clients.PerpetualFuturesApi
         /// <param name="onMessage">The event handler for the received data</param>
         /// <param name="ct">Cancellation token for closing this subscription</param>
         /// <returns>A stream subscription. This stream subscription can be used to be notified when the socket is disconnected/reconnected</returns>
-        Task<CallResult<UpdateSubscription>> SubscribeToReduceRiskLimitUpdatesAsync(long userId, string settlementAsset, Action<DataEvent<IEnumerable<GateIoPerpRiskLimitUpdate>>> onMessage, CancellationToken ct = default);
+        Task<CallResult<UpdateSubscription>> SubscribeToReduceRiskLimitUpdatesAsync(long userId, string settlementAsset, Action<DataEvent<GateIoPerpRiskLimitUpdate[]>> onMessage, CancellationToken ct = default);
 
         /// <summary>
         /// Subscribe to position updates
@@ -209,7 +221,7 @@ namespace GateIo.Net.Interfaces.Clients.PerpetualFuturesApi
         /// <param name="onMessage">The event handler for the received data</param>
         /// <param name="ct">Cancellation token for closing this subscription</param>
         /// <returns>A stream subscription. This stream subscription can be used to be notified when the socket is disconnected/reconnected</returns>
-        Task<CallResult<UpdateSubscription>> SubscribeToPositionUpdatesAsync(long userId, string settlementAsset, Action<DataEvent<IEnumerable<GateIoPositionUpdate>>> onMessage, CancellationToken ct = default);
+        Task<CallResult<UpdateSubscription>> SubscribeToPositionUpdatesAsync(long userId, string settlementAsset, Action<DataEvent<GateIoPositionUpdate[]>> onMessage, CancellationToken ct = default);
 
         /// <summary>
         /// Subscribe to trigger order updates
@@ -220,7 +232,17 @@ namespace GateIo.Net.Interfaces.Clients.PerpetualFuturesApi
         /// <param name="onMessage">The event handler for the received data</param>
         /// <param name="ct">Cancellation token for closing this subscription</param>
         /// <returns>A stream subscription. This stream subscription can be used to be notified when the socket is disconnected/reconnected</returns>
-        Task<CallResult<UpdateSubscription>> SubscribeToTriggerOrderUpdatesAsync(long userId, string settlementAsset, Action<DataEvent<IEnumerable<GateIoPerpTriggerOrderUpdate>>> onMessage, CancellationToken ct = default);
+        Task<CallResult<UpdateSubscription>> SubscribeToTriggerOrderUpdatesAsync(long userId, string settlementAsset, Action<DataEvent<GateIoPerpTriggerOrderUpdate[]>> onMessage, CancellationToken ct = default);
+
+        /// <summary>
+        /// Subscribe to user ADL updates
+        /// <para><a href="https://www.gate.com/docs/developers/futures/ws/en/#positions-adl-subscription" /></para>
+        /// </summary>
+        /// <param name="settlementAsset">The settlement asset. btc, usdt or usd</param>
+        /// <param name="onMessage">The event handler for the received data</param>
+        /// <param name="ct">Cancellation token for closing this subscription</param>
+        /// <returns>A stream subscription. This stream subscription can be used to be notified when the socket is disconnected/reconnected</returns>
+        Task<CallResult<UpdateSubscription>> SubscribeToAdlUpdatesAsync(string settlementAsset, Action<DataEvent<GateIoAdlUpdate[]>> onMessage, CancellationToken ct = default);
 
         /// <summary>
         /// Place a new order
@@ -262,7 +284,7 @@ namespace GateIo.Net.Interfaces.Clients.PerpetualFuturesApi
         /// <param name="orders">Orders</param>
         /// <param name="ct">Cancellation token</param>
         /// <returns></returns>
-        Task<CallResult<IEnumerable<GateIoPerpOrder>>> PlaceMultipleOrderAsync(
+        Task<CallResult<GateIoPerpOrder[]>> PlaceMultipleOrderAsync(
             string settlementAsset,
             IEnumerable<GateIoPerpBatchPlaceRequest> orders,
             CancellationToken ct = default);
@@ -299,7 +321,7 @@ namespace GateIo.Net.Interfaces.Clients.PerpetualFuturesApi
         /// <param name="lastId">Last id to retrieve from</param>
         /// <param name="ct">Cancellation token</param>
         /// <returns></returns>
-        Task<CallResult<IEnumerable<GateIoPerpOrder>>> GetOrdersAsync(
+        Task<CallResult<GateIoPerpOrder[]>> GetOrdersAsync(
             string settlementAsset,
             bool open,
             string? contract = null,
@@ -317,7 +339,7 @@ namespace GateIo.Net.Interfaces.Clients.PerpetualFuturesApi
         /// <param name="side">Order side</param>
         /// <param name="ct">Cancellation token</param>
         /// <returns></returns>
-        Task<CallResult<IEnumerable<GateIoPerpOrder>>> CancelOrdersAsync(
+        Task<CallResult<GateIoPerpOrder[]>> CancelOrdersAsync(
             string settlementAsset,
             string contract,
             OrderSide? side = null,

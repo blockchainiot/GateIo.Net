@@ -33,7 +33,7 @@ namespace Microsoft.Extensions.DependencyInjection
             IConfiguration configuration)
         {
             var options = new GateIoOptions();
-            // Reset environment so we know if theyre overriden
+            // Reset environment so we know if they're overridden
             options.Rest.Environment = null!;
             options.Socket.Environment = null!;
             configuration.Bind(options);
@@ -66,7 +66,7 @@ namespace Microsoft.Extensions.DependencyInjection
             Action<GateIoOptions>? optionsDelegate = null)
         {
             var options = new GateIoOptions();
-            // Reset environment so we know if theyre overriden
+            // Reset environment so we know if they're overridden
             options.Rest.Environment = null!;
             options.Socket.Environment = null!;
             optionsDelegate?.Invoke(options);
@@ -84,21 +84,6 @@ namespace Microsoft.Extensions.DependencyInjection
             return AddGateIoCore(services, options.SocketClientLifeTime);
         }
 
-        /// <summary>
-        /// DEPRECATED; use <see cref="AddGateIo(IServiceCollection, Action{GateIoOptions}?)" /> instead
-        /// </summary>
-        public static IServiceCollection AddGateIo(
-            this IServiceCollection services,
-            Action<GateIoRestOptions> restDelegate,
-            Action<GateIoSocketOptions>? socketDelegate = null,
-            ServiceLifetime? socketClientLifeTime = null)
-        {
-            services.Configure<GateIoRestOptions>((x) => { restDelegate?.Invoke(x); });
-            services.Configure<GateIoSocketOptions>((x) => { socketDelegate?.Invoke(x); });
-
-            return AddGateIoCore(services, socketClientLifeTime);
-        }
-
         private static IServiceCollection AddGateIoCore(
             this IServiceCollection services,
             ServiceLifetime? socketClientLifeTime = null)
@@ -109,25 +94,8 @@ namespace Microsoft.Extensions.DependencyInjection
                 client.Timeout = options.RequestTimeout;
                 return new GateIoRestClient(client, serviceProvider.GetRequiredService<ILoggerFactory>(), serviceProvider.GetRequiredService<IOptions<GateIoRestOptions>>());
             }).ConfigurePrimaryHttpMessageHandler((serviceProvider) => {
-                var handler = new HttpClientHandler();
-                try
-                {
-                    handler.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
-                    handler.DefaultProxyCredentials = CredentialCache.DefaultCredentials;
-                }
-                catch (PlatformNotSupportedException) { }
-                catch (NotImplementedException) { } // Mono runtime throws NotImplementedException for DefaultProxyCredentials setting
-
                 var options = serviceProvider.GetRequiredService<IOptions<GateIoRestOptions>>().Value;
-                if (options.Proxy != null)
-                {
-                    handler.Proxy = new WebProxy
-                    {
-                        Address = new Uri($"{options.Proxy.Host}:{options.Proxy.Port}"),
-                        Credentials = options.Proxy.Password == null ? null : new NetworkCredential(options.Proxy.Login, options.Proxy.Password)
-                    };
-                }
-                return handler;
+                return LibraryHelpers.CreateHttpClientMessageHandler(options.Proxy, options.HttpKeepAliveInterval);
             });
             services.Add(new ServiceDescriptor(typeof(IGateIoSocketClient), x => { return new GateIoSocketClient(x.GetRequiredService<IOptions<GateIoSocketOptions>>(), x.GetRequiredService<ILoggerFactory>()); }, socketClientLifeTime ?? ServiceLifetime.Singleton));
 
@@ -135,7 +103,13 @@ namespace Microsoft.Extensions.DependencyInjection
             services.AddSingleton<ICryptoSocketClient, CryptoSocketClient>();
             services.AddTransient<IGateIoOrderBookFactory, GateIoOrderBookFactory>();
             services.AddTransient<IGateIoTrackerFactory, GateIoTrackerFactory>();
-            services.AddTransient(x => x.GetRequiredService<IGateIoRestClient>().SpotApi.CommonSpotClient);
+            services.AddTransient<ITrackerFactory, GateIoTrackerFactory>();
+            services.AddSingleton<IGateIoUserClientProvider, GateIoUserClientProvider>(x =>
+            new GateIoUserClientProvider(
+                x.GetRequiredService<HttpClient>(),
+                x.GetRequiredService<ILoggerFactory>(),
+                x.GetRequiredService<IOptions<GateIoRestOptions>>(),
+                x.GetRequiredService<IOptions<GateIoSocketOptions>>()));
 
             services.RegisterSharedRestInterfaces(x => x.GetRequiredService<IGateIoRestClient>().SpotApi.SharedClient);
             services.RegisterSharedSocketInterfaces(x => x.GetRequiredService<IGateIoSocketClient>().SpotApi.SharedClient);

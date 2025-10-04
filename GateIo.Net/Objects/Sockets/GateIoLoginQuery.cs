@@ -2,23 +2,19 @@
 using CryptoExchange.Net.Objects.Sockets;
 using CryptoExchange.Net.Sockets;
 using System.Collections.Generic;
-using CryptoExchange.Net;
-using CryptoExchange.Net.Converters.JsonNet;
 using System;
 using System.Collections;
 using GateIo.Net.Objects.Internal;
 using CryptoExchange.Net.Interfaces;
+using CryptoExchange.Net.Clients;
 
 namespace GateIo.Net.Objects.Sockets
 {
-    internal class GateIoLoginQuery : Query<GateIoSocketRequestResponse<GateIoSocketLoginResponse>, GateIoSocketRequestResponse<GateIoSocketLoginResponse>>
+    internal class GateIoLoginQuery : Query<GateIoSocketRequestResponse<GateIoSocketLoginResponse>>
     {
-        public override HashSet<string> ListenerIdentifiers { get; set; }
+        private readonly SocketApiClient _client;
 
-        /// <inheritdoc />
-        public override Type? GetMessageType(IMessageAccessor message) => typeof(GateIoSocketRequestResponse<GateIoSocketLoginResponse>);
-
-        public GateIoLoginQuery(long id, string channel, string evnt, string key, string sign, long timestamp) 
+        public GateIoLoginQuery(SocketApiClient client, long id, string channel, string evnt, string key, string sign, long timestamp) 
             : base(new GateIoSocketRequest<GateIoSocketLoginRequest> { 
                 Channel = channel,
                 Event = evnt,
@@ -33,15 +29,17 @@ namespace GateIo.Net.Objects.Sockets
                 }
             }, false, 1)
         {
-            ListenerIdentifiers = new HashSet<string> { id.ToString() };
+            _client = client;
+
+            MessageMatcher = MessageMatcher.Create<GateIoSocketRequestResponse<GateIoSocketLoginResponse>>(id.ToString(), HandleMessage);
         }
 
-        public override CallResult<GateIoSocketRequestResponse<GateIoSocketLoginResponse>> HandleMessage(SocketConnection connection, DataEvent<GateIoSocketRequestResponse<GateIoSocketLoginResponse>> message)
+        public CallResult<GateIoSocketRequestResponse<GateIoSocketLoginResponse>> HandleMessage(SocketConnection connection, DataEvent<GateIoSocketRequestResponse<GateIoSocketLoginResponse>> message)
         {
             if (message.Data.Header.Status != 200)
-                return message.ToCallResult<GateIoSocketRequestResponse<GateIoSocketLoginResponse>>(new ServerError(message.Data.Header.Status, message.Data.Data.Error!.Message));
+                return message.ToCallResult<GateIoSocketRequestResponse<GateIoSocketLoginResponse>>(new ServerError(message.Data.Header.Status, _client.GetErrorInfo(message.Data.Header.Status, message.Data.Data.Error!.Message)));
 
-            return message.ToCallResult(message.Data!);
+            return message.ToCallResult();
         }
     }
 }
